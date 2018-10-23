@@ -99,7 +99,7 @@ def queries_to_xml(conn):
 def get_file(file_type, conn):
     if file_type == keys.CSV:
         queries_to_csv(conn)
-    elif file_type == keys.CSV:
+    elif file_type == keys.JSON:
         queries_to_json(conn)
     elif file_type == keys.XML:
         queries_to_xml(conn)
