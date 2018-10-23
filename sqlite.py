@@ -1,12 +1,8 @@
 import sqlite3
 from sqlite3 import Error
 import csv
-from xml.dom.minidom import getDOMImplementation
-# import cx_Oracle
-from xml.dom.minidom import parseString
 import keys
-import xml.etree.ElementTree as ET
-
+import dicttoxml
 
 
 def create_connection(db_file):
@@ -35,19 +31,15 @@ def sql_to_csv(file_name, rows, header):
             writer.writerow(row)
 
 
-def select_task_max_sals_to_country(conn):
-    cur = conn.cursor()
-    # cur.execute("SELECT  tracks.Name, invoices.BillingCountry, MAX (invoices.InvoiceId) "
-    #             "FROM tracks, invoices, invoice_items WHERE tracks.TrackId == invoice_items.TrackId "
-    #             "GROUP BY invoices.BillingCountry;")
-    # cur.execute("SELECT  tracks.Name,  COUNT (*) "
-    #             "FROM tracks, invoices, invoice_items "
-    #             "JOIN tracks ON tracks.TrackId == invoice_items.TrackId "
-    #             "JOIN invoices ON invoices.InvoiceId == invoice_items.InvoiceId;")
-    rows = cur.fetchall()
-
-    for row in rows:
-        print(row)
+def sql_to_xml(file_name, result, cur):
+    items = []
+    file_name = file_name + ".xml"
+    for row in result:
+        for key in cur.description:
+            items.append({key[0]: value for value in row})
+    xml = dicttoxml.dicttoxml(items)
+    file = open(file_name, "w")
+    file.write("".join(map(chr, xml)))
 
 
 def queries_to_json(conn):
@@ -89,29 +81,19 @@ def queries_to_csv(conn):
     sql_to_csv(keys.INVOICES_TO_COUNTRY_NAME, cur.fetchall(), ["country", "invoices_number"])
 
 
-# def to_minidom(conn):
-#     cur = conn.cursor()
-#     cur.execute(keys.SONGS_INFO)
-#     for row in cur.fetchall():
-#         print(row[1])
-#
-#     return parseString(cur.fetchone()[0].read())
+def queries_to_xml(conn):
+    cur = conn.cursor()
+    result = cur.execute(keys.SONGS_INFO)
+    sql_to_xml(keys.SONGS_INFO_NAME, result, cur)
 
+    result = cur.execute(keys.CUSTOMERS_INFO)
+    sql_to_xml(keys.CUSTOMERS_INFO_NAME, result, cur)
 
-        # xml = row[1]
+    result = cur.execute(keys.DOMAIN_TO_COUNTRY)
+    sql_to_xml(keys.DOMAIN_TO_COUNTRY_NAME, result, cur)
 
-    # Generate the xml file from the string
-    # dom = parse(keys.PATH)
-    # impl = getDOMImplementation()
-    # newdoc = impl.createDocument(None, "some_tag", None)
-    # top_element = newdoc.documentElement
-    # text = newdoc.createTextNode('Some textual content.')
-    # top_element.appendChild(text)
-    #
-    # # Write the new xml file
-    # xml_str = impl.toprettyxml(indent="  ")
-    # with open("example.xml", "w") as f:
-    #     f.write(xml_str)
+    result = cur.execute(keys.INVOICES_TO_COUNTRY)
+    sql_to_xml(keys.INVOICES_TO_COUNTRY_NAME, result, cur)
 
 
 def get_file(file_type, conn):
@@ -119,40 +101,10 @@ def get_file(file_type, conn):
         queries_to_csv(conn)
     elif file_type == keys.CSV:
         queries_to_json(conn)
-    # elif file_type == keys.XML:
-    #     queries_to_xml(conn)
-    elif file_type == keys.SQL:
-        queries_to_json(conn)
+    elif file_type == keys.XML:
+        queries_to_xml(conn)
 
 
 def play_queries(path, file_type):
     conn = create_connection(path)
     get_file(file_type, conn)
-
-
-def to_minidom(sql, db_file):
-    conn = sqlite3.connect(db_file)
-    with conn as db:
-        cursor = db.cursor()
-        # cursor.execute("select dbms_xmlgen.getxml('%s') from dual" % sql)
-        cursor.execute("select dbms_xmlgen.getxml('%s') from dual" % sql)
-        return parseString(cursor.fetchone()[0].read())
-
-
-if __name__ == "__main__":
-    # md = to_minidom(keys.SONGS_INFO, keys.PATH)
-    # rows = md.getElementsByTagName("ROW")
-    # print(type(rows), len(rows))
-    data = ET.Element('data')
-    items = ET.SubElement(data, 'items')
-    item1 = ET.SubElement(items, 'item')
-    item2 = ET.SubElement(items, 'item')
-    item1.set('name', 'item1')
-    item2.set('name', 'item2')
-    item1.text = 'item1abc'
-    item2.text = 'item2abc'
-
-    # create a new XML file with the results
-    mydata = ET.tostring(data)
-    myfile = open("items2.xml", "w")
-    myfile.write(mydata)
