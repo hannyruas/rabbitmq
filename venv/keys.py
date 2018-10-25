@@ -7,7 +7,7 @@ JSON = "json"
 
 SONGS_INFO_NAME = "song_info"
 CUSTOMERS_INFO_NAME = "customers_info"
-DOMAIN_TO_COUNTRY_NAME = "domain_to country"
+DOMAIN_TO_COUNTRY_NAME = "domain_to_country"
 INVOICES_TO_COUNTRY_NAME = "invoice_to_country"
 
 SONGS_INFO = "SELECT tracks.Name as tracks_name, genres.Name as genres_name, artists.Name as artists_name FROM tracks" \

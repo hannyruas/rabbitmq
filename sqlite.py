@@ -24,11 +24,12 @@ def sql_to_json(cursor, row):
 
 def sql_to_csv(file_name, rows, header):
     file_name = file_name + ".csv"
-    with open(file_name, 'w', newline='') as f_handle:
-        writer = csv.writer(f_handle)
-        writer.writerow(header)
-        for row in rows:
-            writer.writerow(row)
+    f_handle = open(file_name, 'w', newline='')
+    # with open(file_name, 'w', newline='') as f_handle:
+    writer = csv.writer(f_handle)
+    writer.writerow(header)
+    for row in rows:
+        writer.writerow(row)
 
 
 def sql_to_xml(file_name, result, cur):
@@ -108,3 +109,19 @@ def get_file(file_type, conn):
 def play_queries(path, file_type):
     conn = create_connection(path)
     get_file(file_type, conn)
+
+
+# if __name__ == "__main__":
+#     conn = create_connection(keys.PATH)
+#     cur = conn.cursor()
+#     result = cur.execute("SELECT invoice_items.TrackId FROM invoice_items"
+#                          )
+#                          # " INNER JOIN  Products AS p ON  p.ProductID = od.ProductID INNER JOIN invoices AS i ON  "
+#                          # "s.SupplierID = p.SupplierID GROUP BY s.CountryID, p.ProductID), "
+#                          # "RankedProductQuantityByCountry AS RANK() OVER (PARTITION BY CountryID "
+#                          # "ORDER BY Quantity DESC)  AS countryRank, * "
+#                          # "FROM ProductQuantityByCountry ) "
+#                          # "SELECT * FROM RankedProductQuantityByCountry WHERE countryRank = 1")
+#     for row in cur.fetchall():
+#         print(row)
+
