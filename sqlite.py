@@ -1,3 +1,4 @@
+import json
 import sqlite3
 from sqlite3 import Error
 import csv
@@ -15,86 +16,69 @@ def create_connection(db_file):
     return None
 
 
-def sql_to_json(cursor, row):
+def sql_db_to_json(cursor, row):
     d = {}
     for idx, col in enumerate(cursor.description):
         d[col[0]] = row[idx]
     return d
 
 
-def sql_to_csv(file_name, rows, header):
+def sql_to_csv(file_name, query, conn):
     file_name = file_name + ".csv"
-    f_handle = open(file_name, 'w', newline='')
-    # with open(file_name, 'w', newline='') as f_handle:
-    writer = csv.writer(f_handle)
-    writer.writerow(header)
-    for row in rows:
-        writer.writerow(row)
+    cur = conn.cursor()
+    cur.execute(query)
+    with open(file_name, 'w', newline='') as f_handle:
+        writer = csv.writer(f_handle)
+        field_names = [i[0] for i in cur.description]
+        writer.writerow(field_names)
+        for row in cur.fetchall():
+            writer.writerow(row)
 
 
-def sql_to_xml(file_name, result, cur):
-    items = []
+def sql_to_json(file_name, query, conn):
+    cur = conn.cursor()
+    cur.execute(query)
+    file = open(file_name + ".txt", "w", newline='')
+    for row in cur.fetchall():
+        file.write("\n"+json.dumps(row))
+
+
+def sql_to_xml(file_name, query, conn):
+    cur = conn.cursor()
+    cur.execute(query)
     file_name = file_name + ".xml"
-    for row in result:
-        for key in cur.description:
-            items.append({key[0]: value for value in row})
-    xml = dicttoxml.dicttoxml(items)
-    file = open(file_name, "w")
-    file.write("".join(map(chr, xml)))
-
-
-def queries_to_json(conn):
-    conn.row_factory = sql_to_json
-    cur = conn.cursor()
-    cur.execute(keys.SONGS_INFO)
+    file = open(file_name, "w",  newline='')
     for row in cur.fetchall():
-        print(row)
+        xml = dicttoxml.dicttoxml(row)
+        file.write("\n"+xml.decode())
 
-    cur = conn.cursor()
-    cur.execute(keys.CUSTOMERS_INFO)
-    for row in cur.fetchall():
-        print(row)
 
+def sql_to_sql_table(table_name, query, conn):
     cur = conn.cursor()
-    cur.execute(keys.DOMAIN_TO_COUNTRY)
-    for row in cur.fetchall():
-        print(row)
-
-    cur = conn.cursor()
-    cur.execute(keys.INVOICES_TO_COUNTRY)
-    for row in cur.fetchall():
-        print(row)
+    create_query = "CREATE TABLE " + table_name + " AS SELECT * FROM (" + query + ")"
+    cur.execute(create_query)
 
 
 def queries_to_csv(conn):
-    cur = conn.cursor()
+    for i in range(len(keys.QUERYS)):
+        sql_to_csv(keys.QUERY_NAMES[i], keys.QUERYS[i], conn)
 
-    cur.execute(keys.SONGS_INFO)
-    sql_to_csv(keys.SONGS_INFO_NAME, cur.fetchall(), ["song_name", "genres_name", "artists_name"])
 
-    cur.execute(keys.CUSTOMERS_INFO)
-    sql_to_csv(keys.CUSTOMERS_INFO_NAME, cur.fetchall(), ["first_name", "last_name", "phone", "email", "address"])
-
-    cur.execute(keys.DOMAIN_TO_COUNTRY)
-    sql_to_csv(keys.DOMAIN_TO_COUNTRY_NAME, cur.fetchall(), ['Country', 'domain_number', 'domain_name'])
-
-    cur.execute(keys.INVOICES_TO_COUNTRY)
-    sql_to_csv(keys.INVOICES_TO_COUNTRY_NAME, cur.fetchall(), ["country", "invoices_number"])
+def queries_to_json(conn):
+    conn.row_factory = sql_db_to_json
+    for i in range(len(keys.QUERYS)):
+        sql_to_json(keys.QUERY_NAMES[i], keys.QUERYS[i], conn)
 
 
 def queries_to_xml(conn):
-    cur = conn.cursor()
-    result = cur.execute(keys.SONGS_INFO)
-    sql_to_xml(keys.SONGS_INFO_NAME, result, cur)
+    conn.row_factory = sql_db_to_json
+    for i in range(len(keys.QUERYS)):
+        sql_to_xml(keys.QUERY_NAMES[i], keys.QUERYS[i], conn)
 
-    result = cur.execute(keys.CUSTOMERS_INFO)
-    sql_to_xml(keys.CUSTOMERS_INFO_NAME, result, cur)
 
-    result = cur.execute(keys.DOMAIN_TO_COUNTRY)
-    sql_to_xml(keys.DOMAIN_TO_COUNTRY_NAME, result, cur)
-
-    result = cur.execute(keys.INVOICES_TO_COUNTRY)
-    sql_to_xml(keys.INVOICES_TO_COUNTRY_NAME, result, cur)
+def queries_to_sql_table(conn):
+    for i in range(len(keys.QUERYS)):
+        sql_to_sql_table(keys.QUERY_NAMES[i], keys.QUERYS[i], conn)
 
 
 def get_file(file_type, conn):
@@ -104,6 +88,8 @@ def get_file(file_type, conn):
         queries_to_json(conn)
     elif file_type == keys.XML:
         queries_to_xml(conn)
+    elif file_type == keys.SQL_TABLE:
+        queries_to_sql_table(conn)
 
 
 def play_queries(path, file_type):
@@ -111,17 +97,17 @@ def play_queries(path, file_type):
     get_file(file_type, conn)
 
 
-# if __name__ == "__main__":
-#     conn = create_connection(keys.PATH)
-#     cur = conn.cursor()
-#     result = cur.execute("SELECT invoice_items.TrackId FROM invoice_items"
-#                          )
-#                          # " INNER JOIN  Products AS p ON  p.ProductID = od.ProductID INNER JOIN invoices AS i ON  "
-#                          # "s.SupplierID = p.SupplierID GROUP BY s.CountryID, p.ProductID), "
-#                          # "RankedProductQuantityByCountry AS RANK() OVER (PARTITION BY CountryID "
-#                          # "ORDER BY Quantity DESC)  AS countryRank, * "
-#                          # "FROM ProductQuantityByCountry ) "
-#                          # "SELECT * FROM RankedProductQuantityByCountry WHERE countryRank = 1")
-#     for row in cur.fetchall():
-#         print(row)
-
+if __name__ == "__main__":
+    # conn = create_connection(keys.PATH)
+    # queries_to_csv(conn)
+    conn = create_connection(keys.PATH)
+    queries_to_csv(conn)
+    # cur = conn.cursor()
+    # cur.execute("SELECT tracks.Name AS tracks_name, albums.Title AS title, artists.Name AS artists_name, "
+    #             "genres.Name AS genres_name " \
+    #          "FROM tracks, genres, artists, albums " \
+    #          "WHERE genres.GenreId=tracks.GenreId"
+    #             " AND albums.AlbumId = tracks.AlbumId " \
+    #          "AND artists.ArtistId = albums.ArtistId")
+    # for row in cur.fetchall():
+    #     print(row)

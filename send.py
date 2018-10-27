@@ -7,7 +7,7 @@ channel = connection.channel()
 
 channel.exchange_declare(exchange='logs',  exchange_type='fanout')
 
-choices = [keys.CSV, keys.JSON, keys.XML]
+choices = [keys.CSV, keys.JSON, keys.XML, keys.SQL_TABLE]
 for choice in choices:
     print(choice)
 
