@@ -1,6 +1,8 @@
 
 PATH = "C:\\Users\HannyBuns\Desktop\sqlite\chinook\chinook.db"
 
+ENCODED_ERROR = "Encoded character can not be write into a file"
+
 CSV = "csv"
 XML = "xml"
 JSON = "json"
@@ -26,19 +28,17 @@ CUSTOMERS_INFO = "SELECT customers.FirstName AS first_name, customers.LastName A
                  "customers.Phone AS phone_number, customers.Email AS email," \
                  " customers.Address AS address FROM customers"
 
-DOMAIN_TO_COUNTRY = "SELECT country, count (domain_name) AS domain_number, domain_name FROM " \
-                    "(SELECT country, "\
+DOMAIN_TO_COUNTRY = "SELECT domain_name, country, COUNT(*) AS num_of_album_invoices FROM (SELECT country, " \
                     "substr(substr(Email, instr(Email, '@') + 1),1, instr(substr(Email, instr(Email, '@') + 1), '.')-1)"\
-                    " AS domain_name FROM customers) AS C " \
-                    "GROUP BY domain_name ORDER BY country"
+                    " AS domain_name FROM customers) GROUP BY domain_name, country HAVING COUNT(*) > 0"
 
 INVOICES_TO_COUNTRY = "SELECT customers.Country, COUNT (invoices.InvoiceID) AS num_of_sold FROM invoices, customers " \
-                      "where customers.CustomerId == invoices.CustomerId GROUP BY customers.Country"
+                      "WHERE customers.CustomerId == invoices.CustomerId GROUP BY customers.Country"
 
 MAX_SALS_ALBUM_TO_COUNTRY = "SELECT country, title, MAX(num_of_album_invoices) AS max_sals FROM " \
                             "(SELECT title, country, COUNT(*) AS num_of_album_invoices FROM " \
-                            "(SELECT albums.Title AS title, invoices.BillingCountry AS country" \
-                            " FROM invoices,invoice_items, tracks, albums " \
+                            "(SELECT albums.Title AS title, invoices.BillingCountry AS country " \
+                            "FROM invoices,invoice_items, tracks, albums " \
                             "WHERE invoices.InvoiceId == invoice_items.InvoiceId " \
                             "AND invoice_items.TrackId == tracks.TrackId " \
                             "AND tracks.AlbumId == albums.AlbumId ORDER BY country)"\

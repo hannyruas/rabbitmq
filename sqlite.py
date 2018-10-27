@@ -32,7 +32,11 @@ def sql_to_csv(file_name, query, conn):
         field_names = [i[0] for i in cur.description]
         writer.writerow(field_names)
         for row in cur.fetchall():
-            writer.writerow(row)
+            try:
+                writer.writerow(row)
+            except Exception:
+                print(keys.ENCODED_ERROR)
+                pass
 
 
 def sql_to_json(file_name, query, conn):
@@ -50,13 +54,21 @@ def sql_to_xml(file_name, query, conn):
     file = open(file_name, "w",  newline='')
     for row in cur.fetchall():
         xml = dicttoxml.dicttoxml(row)
-        file.write("\n"+xml.decode())
+        try:
+            file.write("\n" + xml.decode())
+        except Exception:
+            print(keys.ENCODED_ERROR)
+            pass
 
 
 def sql_to_sql_table(table_name, query, conn):
     cur = conn.cursor()
     create_query = "CREATE TABLE " + table_name + " AS SELECT * FROM (" + query + ")"
-    cur.execute(create_query)
+    try:
+        cur.execute(create_query)
+    except Exception:
+        print("Table:" + table_name + " already exists")
+        pass
 
 
 def queries_to_csv(conn):
@@ -95,19 +107,3 @@ def get_file(file_type, conn):
 def play_queries(path, file_type):
     conn = create_connection(path)
     get_file(file_type, conn)
-
-
-if __name__ == "__main__":
-    # conn = create_connection(keys.PATH)
-    # queries_to_csv(conn)
-    conn = create_connection(keys.PATH)
-    queries_to_csv(conn)
-    # cur = conn.cursor()
-    # cur.execute("SELECT tracks.Name AS tracks_name, albums.Title AS title, artists.Name AS artists_name, "
-    #             "genres.Name AS genres_name " \
-    #          "FROM tracks, genres, artists, albums " \
-    #          "WHERE genres.GenreId=tracks.GenreId"
-    #             " AND albums.AlbumId = tracks.AlbumId " \
-    #          "AND artists.ArtistId = albums.ArtistId")
-    # for row in cur.fetchall():
-    #     print(row)

@@ -16,7 +16,7 @@ channel.queue_bind(exchange='logs',
 print(' [*] Waiting for logs. To exit press CTRL+C')
 
 
-def callback(ch, method, properties, body):
+def callback(body):
     body_str = "".join(map(chr, body))
     message_info = body_str.split("  ")
     data_path = message_info[0]
